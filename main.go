@@ -128,8 +128,11 @@ func validate(ls []t.Ad, speed time.Duration) (result string, elapsed int) {
 	elapsed = int(speed.Nanoseconds() / 1e6)
 	result = "OK!"
 	if !reflect.DeepEqual(ls, sortedAds) {
-		// elapsed = 1<<31 - 1
 		result = "The algorithm didn't produce the correct sorting order :("
+		fmt.Println("It produced the following incorrect results")
+		for _, ad := range ls {
+			fmt.Println(ad)
+		}
 	}
 	return
 }

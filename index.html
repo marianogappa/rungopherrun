@@ -57,19 +57,21 @@
   <button onclick="reload()">Reload</button>
   <script type="text/javascript">
     var globalX = 0;
-    function addGophers(gophers) {
-      for (var i = gophers.length - 1; i >= 0; i--) {
+    function addGophers(gs) {
+      window.gophers = gs
+      document.getElementById("box").innerHTML='';
+      for (var i = gs.length - 1; i >= 0; i--) {
+        gs[i].speed *= 10
         tmp = document.createElement('div');
         tmp.innerHTML = `
-        <span>${gophers[i].name}</span>
+        <span>${gs[i].name}</span>
         <div class="track">
-          <div id="${gophers[i].name}" name="gopher" style="position: absolute; top: 0px">
-            <img height="100px" onclick="this.className = '${gophers[i].name}'" src="gopher.png"/>
-            <span>${gophers[i].result}</span>
+          <div id="${gs[i].name}" name="gopher" style="position: absolute; top: 0px">
+            <img height="100px" onclick="this.className = '${gs[i].name}'" src="gopher.png"/>
             <style>
-              .${gophers[i].name} {
+              .${gs[i].name} {
                 transform: translateX(700px);
-                transition-duration: ${gophers[i].speed}ms;
+                transition-duration: ${gs[i].speed}ms;
                 transition-timing-function: linear;
               }
             </style>
@@ -81,15 +83,26 @@
     }
     function start() {
       var l = document.getElementsByName("gopher");
+      var gs = window.gophers
       for (var i = 0; i < l.length; i++) {
         l[i].classList.add(l[i].id);
+        (function(i){
+          window.setTimeout(function(){
+            var gs = window.gophers
+            tmp = document.createElement('div');
+            tmp.innerHTML = `${gs[i].name} took ${gs[i].speed/1000.0}s; ${gs[i].result}`;
+            document.getElementById('box').appendChild(tmp);
+          }, gs[i].speed)
+         })(i);
       }
     }
     function killGophers() {
-      document.getElementById("box").innerHTML="";
+      document.getElementById("box").innerHTML='<img id="spinner" src="spinner.gif"/>';
       globalX = 0;
     }
     function reload() {
+      killGophers();
+      document.getElementById("box").style="display: block";
       httpRequest = new XMLHttpRequest()
       httpRequest.open('GET', 'http://localhost:9000/results')
       httpRequest.send()
@@ -97,10 +110,10 @@
       httpRequest.onreadystatechange = function(){
       if (httpRequest.readyState === XMLHttpRequest.DONE) {
         if (httpRequest.status === 200) {
-          killGophers();
           addGophers(JSON.parse(httpRequest.responseText));
         } else {
           alert('There was a problem with the request.');
+          document.getElementById("box").innerHTML='';
         }
       }
     }
