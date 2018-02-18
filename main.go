@@ -18,15 +18,15 @@ func main() {
 
 type result struct {
 	Name   string `json:"name"`
-	Speed  int    `json:"speed"`
+	Speed1 int    `json:"speed1"`
+	Speed2 int    `json:"speed2"`
 	Result string `json:"result"`
 }
 
 type plug struct {
 	name                        string
-	filterMandatoryRequirements func(ads []t.Ad, requirements []string) []t.Ad
 	calculateDistance           func(i, j int, graphEdges [][]t.Edge) int
-	sortBasedOnPriceAndDistance func(ads []t.Ad)
+	sortBasedOnPriceAndDistance func(ads []t.Ad, councilApproved func(t.Ad) bool)
 }
 
 func runPlugins() []result {
@@ -40,16 +40,13 @@ func runPlugins() []result {
 func runPlugin(p plug) result {
 	fmt.Printf("Running %v\n", p.name)
 	var start = time.Now()
-	filteredList := p.filterMandatoryRequirements(ads, requirements)
-	fmt.Printf("Finished filterMandatoryRequirements for %v\n", p.name)
-	for i := range filteredList {
-		filteredList[i].Distance = p.calculateDistance(0, filteredList[i].Location, graphEdges)
+	for i := range ads {
+		ads[i].Distance = p.calculateDistance(0, ads[i].Location, graphEdges)
 	}
-	fmt.Printf("Finished calculateDistance for %v\n", p.name)
-	p.sortBasedOnPriceAndDistance(filteredList)
-	fmt.Printf("Finished sortBasedOnPriceAndDistance for %v\n", p.name)
-	var res, elapsed = validate(filteredList, time.Now().Sub(start))
-	return result{Name: p.name, Speed: elapsed, Result: res}
+	var elapsed1 = time.Now().Sub(start)
+	p.sortBasedOnPriceAndDistance(ads, councilApproved)
+	var res, elapsed2 = validate(ads), time.Now().Sub(start) - elapsed1
+	return result{Name: p.name, Speed1: int(elapsed1.Nanoseconds() / 1e6), Speed2: int(elapsed2.Nanoseconds() / 1e6), Result: res}
 }
 
 func loadPlugins() []plug {
@@ -89,10 +86,6 @@ func loadPlugins() []plug {
 			if err != nil {
 				log.Printf("%v\nIgnoring plugin\n", err)
 			}
-			f1, err := p.Lookup("FilterMandatoryRequirements")
-			if err != nil {
-				log.Printf("%v\nIgnoring plugin\n", err)
-			}
 			f2, err := p.Lookup("CalculateDistance")
 			if err != nil {
 				log.Printf("%v\nIgnoring plugin\n", err)
@@ -105,34 +98,32 @@ func loadPlugins() []plug {
 			if !ok {
 				log.Println("Couldn't cast to string; Ignoring plugin")
 			}
-			filterMandatoryRequirements, ok := f1.(func([]t.Ad, []string) []t.Ad)
-			if !ok {
-				log.Println("Couldn't cast to string; Ignoring plugin")
-			}
 			calculateDistance, ok := f2.(func(int, int, [][]t.Edge) int)
 			if !ok {
 				log.Println("Couldn't cast to string; Ignoring plugin")
 			}
-			sortBasedOnPriceAndDistance, ok := f3.(func([]t.Ad))
+			sortBasedOnPriceAndDistance, ok := f3.(func([]t.Ad, func(t.Ad) bool))
 			if !ok {
 				log.Println("Couldn't cast to string; Ignoring plugin")
 			}
-			plugs = append(plugs, plug{*name, filterMandatoryRequirements, calculateDistance, sortBasedOnPriceAndDistance})
+			plugs = append(plugs, plug{*name, calculateDistance, sortBasedOnPriceAndDistance})
 		}
 	}
 
 	return plugs
 }
 
-func validate(ls []t.Ad, speed time.Duration) (result string, elapsed int) {
-	elapsed = int(speed.Nanoseconds() / 1e6)
-	result = "OK!"
+func validate(ls []t.Ad) string {
+	var result = "OK!"
 	if !reflect.DeepEqual(ls, sortedAds) {
 		result = "The algorithm didn't produce the correct sorting order :("
 		fmt.Println("It produced the following incorrect results")
 		for _, ad := range ls {
-			fmt.Println(ad)
+			// if ad.Price != sortedAds[i].Price || ad.Distance != sortedAds[i].Distance {
+			// 	fmt.Println(i)
+			// }
+			fmt.Println(ad.Price, ad.Distance)
 		}
 	}
-	return
+	return result
 }

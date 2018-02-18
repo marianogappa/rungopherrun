@@ -3,10 +3,9 @@ package types
 // An Ad represents a rental ad.
 // It's distance must be calculated based on location.
 type Ad struct {
-	Price       int
-	Distance    int
-	Location    int
-	Description string
+	Price    int
+	Distance int
+	Location int
 }
 
 // An Edge represents the street between two intersections.
