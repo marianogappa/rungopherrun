@@ -458,6 +458,6 @@ var sortedAds = []t.Ad{
 }
 
 func councilApproved(ad t.Ad) bool {
-	time.Sleep(150 * time.Nanosecond)
+	time.Sleep(170 * time.Nanosecond)
 	return true
 }
